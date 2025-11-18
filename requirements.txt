@@ -1,3 +1,4 @@
+Pyrebase4
 django==4.2.8
 djangorestframework==3.14.0
 psycopg2==2.9.9 ; platform_machine != "aarch64"
