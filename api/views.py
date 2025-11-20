@@ -17,13 +17,11 @@ def import_order(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # 建立訂單
     order = Order.objects.create(
         order_number=order_number,
         total_price=total_price
     )
 
-    # 建立 OrderProduct 關聯
     for item in products_data:
         product_id = item.get('product_id')
         quantity = item.get('quantity', 1)
@@ -42,7 +40,6 @@ def import_order(request):
             quantity=quantity
         )
 
-    # 更新庫存
     order.update_stock()
 
     return Response(

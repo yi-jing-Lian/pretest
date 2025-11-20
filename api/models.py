@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.utils import timezone
 class Product(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -56,22 +56,38 @@ class OrderProduct(models.Model):
         return f"{self.product.name} x {self.quantity}"
     
 
-class Promotion(models.Model):
+
+class PromotionCode(models.Model):
+    DISCOUNT_CHOICES = [
+        ('percent', 'Percent'),
+        ('fixed', 'Fixed'),
+    ]
+
     name = models.CharField(max_length=100)
-    discount_type = models.CharField(max_length=20, choices=[('percent', 'Percent'), ('fixed', 'Fixed')])
+    code = models.CharField(max_length=100, unique=True)
+    discount_type = models.CharField(max_length=20, choices=DISCOUNT_CHOICES)
     value = models.DecimalField(max_digits=10, decimal_places=2)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    products = models.ManyToManyField(Product, related_name="promotions")
+    products = models.ManyToManyField('Product', related_name='promotions')
 
     def is_active(self):
-        from django.utils import timezone
         now = timezone.now()
         return self.start_date <= now <= self.end_date
 
+    def is_valid(self, input_code):
+        now = timezone.now()
+        return (
+            self.start_date <= now <= self.end_date and
+            self.code.lower() == input_code.lower()
+        )
+
     def apply_discount(self, price):
         if self.discount_type == 'percent':
-            return price * (1 - self.value/100)
+            return price * (1 - self.value / 100)
         elif self.discount_type == 'fixed':
             return max(0, price - self.value)
         return price
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
