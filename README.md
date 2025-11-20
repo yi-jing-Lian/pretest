@@ -73,6 +73,8 @@ python manage.py test
   - Build relationships between **Order** and **Product** model
 
 - Get creative and Extend anything you want
+  - add restock api
+  - TODO: apply promote code function in import_order api   
 
 ---
 
