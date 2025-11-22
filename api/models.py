@@ -21,10 +21,11 @@ class Product(models.Model):
 
 class Order(models.Model):
     order_number = models.CharField(max_length=100, unique=True)
-    total_price = models.DecimalField(max_digits=10, decimal_places=0)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     products = models.ManyToManyField(Product, through='OrderProduct')
+    promo_code = models.ForeignKey('PromotionCode', null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.order_number
@@ -34,13 +35,15 @@ class Order(models.Model):
             order_product.product.adjust_stock(order_product.quantity)
 
     def calculate_total(self):
-        subtotal = 0
-        for order_product in self.orderproduct_set.all():
-            subtotal += order_product.product.price * order_product.quantity
+        subtotal = sum([
+            item.product.price * item.quantity
+            for item in self.orderproduct_set.all()
+        ])
 
-        for promo in Promotion.objects.filter(products__in=self.products.all()):
-            if promo.is_active():
-                subtotal = promo.apply_discount(subtotal)
+        if self.promo_code and self.promo_code.is_valid(self.promo_code.code):
+            applicable_products = self.promo_code.products.all()
+            if all(p in applicable_products for p in self.products.all()):
+                subtotal = self.promo_code.apply_discount(subtotal)
 
         self.total_price = subtotal
         self.save()

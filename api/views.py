@@ -1,27 +1,43 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Order, Product, OrderProduct
+from .models import Order, Product, OrderProduct, PromotionCode
 from .decorators import validate_access_token
 
 @api_view(['POST'])
 @validate_access_token
 def import_order(request):
     order_number = request.data.get('order_number')
-    total_price = request.data.get('total_price')
+    promo_code_str = request.data.get('promo_code')  
     products_data = request.data.get('products', [])
 
-    if not order_number or not total_price:
+    if not order_number or not products_data:
         return Response(
             {"detail": "Missing required fields"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    order = Order.objects.create(
-        order_number=order_number,
-        total_price=total_price
-    )
+    order = Order.objects.create(order_number=order_number)
 
+    # ✅ 嘗試套用促銷代碼（如果有提供）
+    if promo_code_str:
+        try:
+            promo = PromotionCode.objects.get(code=promo_code_str)
+            if promo.is_valid(promo_code_str):
+                order.promo_code = promo
+                order.save()
+            else:
+                return Response(
+                    {"detail": "Invalid or expired promo code"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except PromotionCode.DoesNotExist:
+            return Response(
+                {"detail": "Promo code not found"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    # 加入商品
     for item in products_data:
         product_id = item.get('product_id')
         quantity = item.get('quantity', 1)
@@ -40,10 +56,17 @@ def import_order(request):
             quantity=quantity
         )
 
+    # ✅ 自動計算總價（含折扣或原價）
+    order.calculate_total()
+
+    # 更新庫存
     order.update_stock()
 
     return Response(
-        {"detail": "Order created successfully"},
+        {
+            "detail": "Order created successfully",
+            "final_price": order.total_price
+        },
         status=status.HTTP_201_CREATED
     )
 
