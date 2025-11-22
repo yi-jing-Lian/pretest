@@ -37,9 +37,9 @@
 
 - run test case
 
-```
-python manage.py test
-```
+  ```
+  python manage.py test
+  ```
 
 ---
 
@@ -54,11 +54,13 @@ python manage.py test
   - Created-time
 
 - Construct **import_order** api ( POST method )
+
   - Validate access token from request data
 
     ( accepted token is defined in **api/views.py** )
 
   - Parse data and Save to corresponding fields
+
 - Construct api unittest
 
 ---
@@ -74,7 +76,7 @@ python manage.py test
 
 - Get creative and Extend anything you want
   - add restock api
-  - TODO: apply promote code function in import_order api   
+  - promote code function in import_order api
 
 ---
 
