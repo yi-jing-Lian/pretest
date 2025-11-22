@@ -19,7 +19,6 @@ def import_order(request):
 
     order = Order.objects.create(order_number=order_number)
 
-    # ✅ 嘗試套用促銷代碼（如果有提供）
     if promo_code_str:
         try:
             promo = PromotionCode.objects.get(code=promo_code_str)
@@ -37,7 +36,6 @@ def import_order(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    # 加入商品
     for item in products_data:
         product_id = item.get('product_id')
         quantity = item.get('quantity', 1)
@@ -56,10 +54,8 @@ def import_order(request):
             quantity=quantity
         )
 
-    # ✅ 自動計算總價（含折扣或原價）
     order.calculate_total()
 
-    # 更新庫存
     order.update_stock()
 
     return Response(
